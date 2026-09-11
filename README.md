@@ -22,29 +22,13 @@
 
 ## 界面预览
 
-主界面（深色 · 森林主题）：分组、已完成、已搁置
-
-![主界面深色](docs/images/main-dark.png)
-
-浅色主题（素白预设）：
-
-![主界面浅色](docs/images/main-light.png)
-
-设置 · 外观（主题预设、颜色、字体、透明度）：
-
-![设置外观](docs/images/settings-appearance.png)
-
-设置 · 归档数据（按原分组恢复或永久删除）：
-
-![设置归档](docs/images/settings-archive.png)
-
-隐私模式（隐藏任务文本）：
-
-![隐私模式](docs/images/privacy-mode.png)
-
-空闲自动收起后的贴边条 / 悬停胶囊：
-
-![贴边条](docs/images/edge-dock.png)
+| **主界面 · 深色（森林主题）** | **主界面 · 浅色（素白预设）** |
+| :---: | :---: |
+| <img src="docs/images/main-dark.png" alt="主界面深色" width="400"> | <img src="docs/images/main-light.png" alt="主界面浅色" width="400"> |
+| **设置 · 外观（主题 · 颜色 · 字体 · 透明度）** | **设置 · 归档数据（按原分组恢复 / 永久删除）** |
+| <img src="docs/images/settings-appearance.png" alt="设置外观" width="400"> | <img src="docs/images/settings-archive.png" alt="设置归档" width="400"> |
+| **隐私模式（隐藏任务文本）** | **贴边条 / 悬停胶囊（空闲自动收起）** |
+| <img src="docs/images/privacy-mode.png" alt="隐私模式" width="400"> | <img src="docs/images/edge-dock.png" alt="贴边条" width="400"> |
 
 ## 功能说明
 
