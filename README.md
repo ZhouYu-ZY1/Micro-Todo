@@ -7,6 +7,14 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078d4)](#系统要求)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
+## 下载与主页
+
+[![下载 v1.2.1](https://img.shields.io/badge/%E4%B8%8B%E8%BD%BD-v1.2.1-2ea44f?logo=windows)](https://github.com/ZhouYu-ZY1/Micro-Todo/releases/download/v1.2.1/Micro.Todo-Setup-v1.2.1.exe)
+[![官网主页](https://img.shields.io/badge/%E5%AE%98%E7%BD%91%E4%B8%BB%E9%A1%B5-Micro--Todo-blueviolet)](https://zhouyu-zy1.github.io/Micro-Todo/)
+
+- **下载安装包**：[`Micro.Todo-Setup-v1.2.1.exe`](https://github.com/ZhouYu-ZY1/Micro-Todo/releases/download/v1.2.1/Micro.Todo-Setup-v1.2.1.exe) · Windows 10 / 11
+- **官网主页**：<https://zhouyu-zy1.github.io/Micro-Todo/>
+
 ## 功能特性
 
 - 半透明无边框便签，可看到桌面壁纸
@@ -71,7 +79,7 @@
 
 ## 系统要求
 
-- 操作系统：Windows 10 / 11（程序使用 Win32 原生窗口 API 实现置顶）
+- 操作系统：Windows 10 / 11
 - Python 3.10 及以上（开发运行）
 
 ## 运行方式
@@ -92,8 +100,6 @@ python main.py
 
 - `Micro Todo.db`：SQLite 数据库，保存分组与任务
 - `settings.json`：外观、窗口位置、语言等设置
-
-请勿删除该目录下的数据库文件；首次启动会自动迁移旧版 `tasks.json` 数据。
 
 ## 项目结构
 
