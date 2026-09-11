@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- 双色品牌 mark:与 assets/icon.ico 同构(蓝色圆角外框 + 白色内页 + 对勾)。
+       几何取自 icon.ico 256px 实测并归一到 24 的 viewBox:
+       外框 10..245 -> 0.94..23.06,圆角 47/236 ≈ 4.8;描边厚 40/236 ≈ 4.0。
+       内页两个小勾选框在 20px 下会糊成一团,这里只保留一个居中对勾。
+       这个 SVG 自带颜色,必须用 color_svg_pixmap 渲染(不能走单色染色路径)。 -->
+  <rect x="1" y="1" width="22" height="22" rx="4.8" fill="#2b7de9"/>
+  <rect x="5" y="5" width="14" height="14" rx="1.6" fill="#ffffff"/>
+  <path d="m8.4 12.1 2.4 2.4 4.8-4.9" stroke="#2b7de9" stroke-width="2.1"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
