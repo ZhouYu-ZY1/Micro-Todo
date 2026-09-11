@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>微清单 Micro Todo — 简洁的 Windows 桌面待办便签</title>
+<meta name="description" content="微清单 Micro Todo：一个简洁的 Windows 桌面 TODO 便签软件。半透明无边框、分组管理、点圆点即完成、数据本地保存。">
+<meta name="theme-color" content="#050b16">
+<link rel="icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="favicon.ico">
+<style>
+  :root{
+    color-scheme: dark light;
+    --bg:#050b16;
+    --bg-soft:#0a1424;
+    --surface:rgba(122,168,255,.055);
+    --surface-hover:rgba(122,168,255,.11);
+    --border:rgba(122,168,255,.15);
+    --border-strong:rgba(122,168,255,.3);
+    --text:#e9f1ff;
+    --muted:#8ea6c6;
+    --accent:#2f7dff;
+    --accent-2:#38d6ff;
+    --accent-soft:rgba(47,125,255,.16);
+    --on-accent:#03101f;
+    --shadow:0 26px 70px rgba(0,0,0,.62);
+    --radius:18px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f4f7fe;
+      --bg-soft:#ffffff;
+      --surface:rgba(20,62,142,.042);
+      --surface-hover:rgba(20,62,142,.085);
+      --border:rgba(20,62,142,.15);
+      --border-strong:rgba(20,62,142,.3);
+      --text:#0d1e3a;
+      --muted:#5a7396;
+      --accent:#1d6bff;
+      --accent-2:#0aa2e0;
+      --accent-soft:rgba(29,107,255,.12);
+      --on-accent:#ffffff;
+      --shadow:0 22px 56px rgba(18,48,110,.16);
+    }
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      linear-gradient(color-mix(in srgb,var(--accent) 7%,transparent) 1px,transparent 1px) 0 0/100% 64px,
+      linear-gradient(90deg,color-mix(in srgb,var(--accent) 7%,transparent) 1px,transparent 1px) 0 0/64px 100%;
+    mask-image:radial-gradient(1200px 700px at 50% -10%,#000 0%,transparent 78%);
+    -webkit-mask-image:radial-gradient(1200px 700px at 50% -10%,#000 0%,transparent 78%);
+    opacity:.6;
+  }
+  a{color:inherit}
+  img{max-width:100%}
+  h1,h2,h3{line-height:1.25;letter-spacing:-.5px}
+  .wrap{width:100%;max-width:1140px;margin:0 auto;padding:0 26px}
+
+  /* ---------- 顶部导航 ---------- */
+  .nav{
+    position:sticky;top:0;z-index:60;
+    background:color-mix(in srgb,var(--bg) 72%,transparent);
+    backdrop-filter:blur(18px) saturate(150%);
+    -webkit-backdrop-filter:blur(18px) saturate(150%);
+    border-bottom:1px solid var(--border);
+  }
+  .nav::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+    background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 55%,transparent),color-mix(in srgb,var(--accent-2) 55%,transparent),transparent);
+    opacity:.7;
+  }
+  .nav-inner{display:flex;align-items:center;gap:18px;height:66px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:750;text-decoration:none;font-size:16.5px;letter-spacing:-.2px}
+  .brand img{
+    width:30px;height:30px;flex:none;
+    filter:drop-shadow(0 4px 12px rgba(47,125,255,.5));
+    transition:transform .25s;
+  }
+  .brand:hover img{transform:rotate(-6deg) scale(1.06)}
+  .nav-links{display:flex;gap:4px;margin-left:auto}
+  .nav-links a{
+    padding:8px 13px;border-radius:10px;text-decoration:none;
+    color:var(--muted);font-size:14.5px;transition:color .2s,background .2s;
+  }
+  .nav-links a:hover{color:var(--text);background:var(--surface)}
+  .lang-btn{
+    min-width:46px;padding:7px 12px;border-radius:10px;cursor:pointer;
+    border:1px solid var(--border);background:var(--surface);color:var(--text);
+    font:inherit;font-size:13.5px;font-weight:600;letter-spacing:.3px;
+    transition:background .2s,border-color .2s,color .2s;
+  }
+  .lang-btn:hover{background:var(--surface-hover);border-color:var(--border-strong);color:var(--accent)}
+
+  /* ---------- 首屏 ---------- */
+  .hero{position:relative;padding:84px 0 96px}
+  .hero::before{
+    content:"";position:absolute;inset:-280px -10% auto;height:800px;pointer-events:none;z-index:-1;
+    background:
+      radial-gradient(620px 360px at 14% 0%,color-mix(in srgb,var(--accent) 34%,transparent),transparent 70%),
+      radial-gradient(560px 340px at 86% 4%,color-mix(in srgb,var(--accent-2) 26%,transparent),transparent 72%);
+    filter:blur(16px);
+  }
+  .hero-inner{position:relative;display:grid;grid-template-columns:1.06fr 1fr;gap:60px;align-items:center}
+  .badge{
+    display:inline-flex;align-items:center;gap:9px;padding:6px 16px;border-radius:999px;
+    border:1px solid var(--border-strong);background:var(--surface);color:var(--muted);
+    font-size:13px;letter-spacing:.2px;
+  }
+  .badge i{width:7px;height:7px;border-radius:50%;background:var(--accent-2);flex:none;box-shadow:0 0 0 0 color-mix(in srgb,var(--accent-2) 70%,transparent);animation:pulse 2.2s infinite}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent-2) 60%,transparent)}
+    70%{box-shadow:0 0 0 9px transparent}
+    100%{box-shadow:0 0 0 0 transparent}
+  }
+  .hero h1{
+    font-size:clamp(42px,6.2vw,64px);margin:22px 0 8px;letter-spacing:-2px;
+    background:linear-gradient(120deg,var(--text) 24%,var(--accent) 62%,var(--accent-2) 96%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .slogan{font-size:clamp(19px,2.4vw,25px);font-weight:600;margin:0 0 18px}
+  .slogan em{font-style:normal;color:var(--accent-2)}
+  .desc{color:var(--muted);font-size:16px;margin:0 0 34px;max-width:536px}
+  .cta{display:flex;flex-wrap:wrap;gap:14px}
+  .hero-meta{margin:26px 0 0;color:var(--muted);font-size:13.5px}
+  .hero-shot{position:relative}
+  .hero-shot::before{
+    content:"";position:absolute;inset:-22px -18px;border-radius:32px;pointer-events:none;
+    background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 68%);
+    filter:blur(26px);
+  }
+  .hero-shot img{
+    position:relative;display:block;width:100%;border-radius:18px;
+    border:1px solid var(--border-strong);
+    box-shadow:var(--shadow);
+  }
+  .hero-shot .light{display:none}
+  @media (prefers-color-scheme: light){
+    .hero-shot .dark{display:none}
+    .hero-shot .light{display:block}
+  }
+
+  /* ---------- 按钮 ---------- */
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;padding:13px 26px;border-radius:13px;
+    text-decoration:none;font-weight:650;font-size:15px;border:1px solid transparent;
+    transition:transform .2s,box-shadow .2s,background .2s,border-color .2s,color .2s;
+  }
+  .btn svg{width:18px;height:18px;flex:none}
+  .btn-primary{
+    background:linear-gradient(120deg,var(--accent),var(--accent-2));
+    color:var(--on-accent);
+    box-shadow:0 14px 34px color-mix(in srgb,var(--accent) 34%,transparent);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 20px 46px color-mix(in srgb,var(--accent) 46%,transparent)}
+  .btn-ghost{border-color:var(--border);background:var(--surface);color:var(--text)}
+  .btn-ghost:hover{background:var(--surface-hover);border-color:var(--border-strong);color:var(--accent);transform:translateY(-2px)}
+
+  /* ---------- 通用区块 ---------- */
+  section{padding:84px 0}
+  .sec-head{max-width:680px;margin:0 auto 48px;text-align:center}
+  .kicker{
+    display:inline-block;font-size:12px;font-weight:750;letter-spacing:2.8px;
+    color:var(--accent);margin-bottom:14px;padding:4px 12px;border-radius:999px;
+    border:1px solid color-mix(in srgb,var(--accent) 34%,transparent);
+    background:var(--accent-soft);
+  }
+  .sec-head h2{font-size:clamp(27px,3.6vw,37px);margin:0 0 12px}
+  .sec-head p{color:var(--muted);margin:0;font-size:15.5px}
+
+  /* ---------- 功能特性 ---------- */
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(276px,1fr));gap:18px}
+  .card{
+    position:relative;overflow:hidden;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:26px 24px 24px;
+    transition:transform .25s,border-color .25s,background .25s,box-shadow .25s;
+  }
+  .card::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    opacity:0;transition:opacity .25s;
+  }
+  .card:hover{
+    transform:translateY(-5px);background:var(--surface-hover);
+    border-color:color-mix(in srgb,var(--accent) 46%,transparent);
+    box-shadow:0 18px 44px rgba(0,0,0,.28);
+  }
+  .card:hover::before{opacity:1}
+  .card .ico{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:44px;height:44px;border-radius:13px;margin-bottom:16px;
+    background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 26%,transparent),color-mix(in srgb,var(--accent-2) 16%,transparent));
+    border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);
+    color:var(--accent-2);
+  }
+  .card .ico svg{width:22px;height:22px}
+  .card h3{margin:0 0 7px;font-size:16.5px}
+  .card p{margin:0;color:var(--muted);font-size:14.5px}
+
+  /* ---------- 界面预览 ---------- */
+  .shots{display:grid;gap:22px}
+  .shots-3{grid-template-columns:repeat(3,1fr)}
+  .shots-2{grid-template-columns:repeat(2,1fr);margin-top:22px}
+  .shots-1{grid-template-columns:minmax(0,440px);justify-content:center;margin-top:22px}
+  .shot{
+    margin:0;border:1px solid var(--border);border-radius:var(--radius);
+    background:var(--bg-soft);overflow:hidden;cursor:zoom-in;
+    transition:transform .25s,border-color .25s,box-shadow .25s;
+  }
+  .shot:hover{
+    transform:translateY(-5px);border-color:color-mix(in srgb,var(--accent) 46%,transparent);
+    box-shadow:0 18px 46px color-mix(in srgb,var(--accent) 22%,transparent);
+  }
+  .shot img{display:block;width:100%;height:auto}
+  .shot figcaption{
+    padding:15px 18px;font-size:14.5px;color:var(--muted);
+    border-top:1px solid var(--border);
+  }
+
+  /* ---------- 下载 ---------- */
+  .dl-card{
+    position:relative;text-align:center;padding:58px 30px;border-radius:24px;
+    border:1px solid var(--border-strong);
+    background:
+      linear-gradient(160deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 42%),
+      var(--bg-soft);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .dl-card::before{
+    content:"";position:absolute;inset:-180px 0 auto;height:380px;pointer-events:none;
+    background:radial-gradient(460px 240px at 50% 0%,color-mix(in srgb,var(--accent) 34%,transparent),transparent 72%);
+  }
+  .dl-card::after{
+    content:"";position:absolute;left:50%;transform:translateX(-50%);top:0;width:min(420px,72%);height:2px;
+    background:linear-gradient(90deg,transparent,var(--accent-2),transparent);
+  }
+  .dl-card > *{position:relative}
+  .dl-card .dl-icon{
+    width:54px;height:54px;margin:0 auto 18px;display:block;
+    filter:drop-shadow(0 8px 20px rgba(47,125,255,.5));
+  }
+  .dl-card h2{font-size:clamp(25px,3.4vw,35px);margin:0 0 12px}
+  .dl-card > p{color:var(--muted);margin:0 auto 32px;max-width:530px}
+  .dl-actions{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+  .dl-facts{
+    display:flex;flex-wrap:wrap;gap:10px 30px;justify-content:center;
+    margin:36px 0 0;padding:26px 0 0;border-top:1px solid var(--border);
+  }
+  .dl-facts div{font-size:13.5px;color:var(--muted)}
+  .dl-facts b{display:block;color:var(--text);font-size:14.5px;font-weight:650;margin-top:2px}
+
+  /* ---------- 页脚 ---------- */
+  footer{border-top:1px solid var(--border);padding:38px 0;color:var(--muted);font-size:14px}
+  .foot-inner{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+  .foot-inner a{text-decoration:none;color:var(--muted);transition:color .2s}
+  .foot-inner a:hover{color:var(--accent)}
+
+  /* ---------- 图片放大 ---------- */
+  .lightbox{
+    position:fixed;inset:0;z-index:100;display:none;
+    align-items:center;justify-content:center;padding:28px;
+    background:rgba(4,9,18,.88);backdrop-filter:blur(8px);
+  }
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:100%;max-height:90vh;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.65)}
+  .lightbox button{
+    position:absolute;top:22px;right:26px;width:42px;height:42px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;
+    font-size:20px;line-height:1;cursor:pointer;transition:background .2s,transform .2s;
+  }
+  .lightbox button:hover{background:rgba(255,255,255,.24);transform:rotate(90deg)}
+
+  /* ---------- 入场动画 ---------- */
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .65s ease,transform .65s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .reveal{opacity:1;transform:none;transition:none}
+    .badge i{animation:none}
+  }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width:900px){
+    .hero{padding:56px 0 70px}
+    .hero-inner{grid-template-columns:1fr;gap:44px}
+    .desc{max-width:none}
+    .shots-3{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:720px){
+    .nav-links{display:none}
+    section{padding:64px 0}
+    .shots-3,.shots-2{grid-template-columns:1fr}
+    .shots-1{grid-template-columns:minmax(0,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top">
+      <img src="favicon.ico" alt="" aria-hidden="true">
+      <span data-i18n="brand">微清单</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#features" data-i18n="nav.features">功能特性</a>
+      <a href="#preview" data-i18n="nav.preview">界面预览</a>
+      <a href="#download" data-i18n="nav.download">下载</a>
+      <a href="https://github.com/ZhouYu-ZY1/Micro-Todo" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <button class="lang-btn" id="langBtn" type="button" aria-label="Switch language">EN</button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- 首屏 -->
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <span class="badge"><i></i><span data-i18n="hero.badge">Windows 桌面便签 · 免费开源</span></span>
+        <h1 data-i18n="hero.title">微清单</h1>
+        <p class="slogan" data-i18n-html="hero.slogan">简洁的 <em>Windows 桌面待办</em>便签</p>
+        <p class="desc" data-i18n="hero.desc">半透明、无边框、普通窗口层级，能看见你的桌面壁纸。点圆点即完成，双击文字直接编辑，数据全部存在本地。</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/ZhouYu-ZY1/Micro-Todo/releases/download/v1.2.1/Micro.Todo-Setup-v1.2.1.exe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span data-i18n="cta.download">下载 v1.2.1</span>
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/ZhouYu-ZY1/Micro-Todo" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            <span data-i18n="cta.source">查看源码</span>
+          </a>
+        </div>
+        <p class="hero-meta" data-i18n="hero.meta">支持 Windows 10 / 11 · 免费开源 · MIT License</p>
+      </div>
+      <div class="hero-shot">
+        <img class="dark" src="images/main-dark.png" alt="微清单主界面（深色主题）">
+        <img class="light" src="images/main-light.png" alt="微清单主界面（浅色主题）">
+      </div>
+    </div>
+  </section>
+
+  <!-- 功能特性 -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">FEATURES</span>
+        <h2 data-i18n="feat.title">功能特性</h2>
+        <p data-i18n="feat.subtitle">一个够用就好的桌面便签，不多一分复杂。</p>
+      </div>
+      <div class="features">
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.6" cy="8.6" r="1.4"/><path d="M21 15.5l-4.6-4.6L5 21"/></svg></span>
+          <h3 data-i18n="feat.1.t">半透明便签</h3>
+          <p data-i18n="feat.1.d">无边框、普通窗口层级，背景透明，可以看见桌面壁纸。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+          <h3 data-i18n="feat.2.t">分组与拖动排序</h3>
+          <p data-i18n="feat.2.d">按分组整理任务，长按分组标题或任务即可拖动排序。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+          <h3 data-i18n="feat.3.t">点圆点即完成</h3>
+          <p data-i18n="feat.3.d">点任务左侧圆点标记完成，双击文字直接编辑，回车保存。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>
+          <h3 data-i18n="feat.4.t">已完成 / 已搁置</h3>
+          <p data-i18n="feat.4.d">二级列表折叠收纳，一键把事项恢复回主列表。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span>
+          <h3 data-i18n="feat.5.t">归档而非删除</h3>
+          <p data-i18n="feat.5.d">移除先进入归档，可按原分组查看，批量恢复或永久删除。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".6" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".6" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".6" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".6" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.83-.44-1.12-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h1.99c3.05 0 5.56-2.5 5.56-5.55C21.96 6.01 17.46 2 12 2z"/></svg></span>
+          <h3 data-i18n="feat.6.t">外观随心调</h3>
+          <p data-i18n="feat.6.d">7 套主题预设，颜色、字体、字号、背景透明度都能改，还能存为自定义预设。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+          <h3 data-i18n="feat.7.t">中英双语界面</h3>
+          <p data-i18n="feat.7.d">界面语言可在简体中文与 English 之间切换。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+          <h3 data-i18n="feat.8.t">锁定与隐私模式</h3>
+          <p data-i18n="feat.8.d">锁定后隐藏编辑控件避免误改；隐私模式一键隐藏全部任务文本。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><line x1="9.5" y1="3" x2="9.5" y2="21"/><path d="M13 9.5h5M13 13h5"/></svg></span>
+          <h3 data-i18n="feat.9.t">闲置自动贴边</h3>
+          <p data-i18n="feat.9.d">空闲几秒自动收成屏幕边缘的细条，鼠标移入展开「待办 N 项」胶囊，托盘常驻。</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="9" ry="3.5"/><path d="M21 12c0 1.93-4.03 3.5-9 3.5S3 13.93 3 12"/><path d="M3 5.5v13c0 1.93 4.03 3.5 9 3.5s9-1.57 9-3.5v-13"/></svg></span>
+          <h3 data-i18n="feat.10.t">数据本地保存</h3>
+          <p data-i18n="feat.10.d">任务存在本机 SQLite 数据库，关掉重开还在，还可设置开机自启。</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 界面预览 -->
+  <section id="preview">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">PREVIEW</span>
+        <h2 data-i18n="preview.title">界面预览</h2>
+        <p data-i18n="preview.subtitle">点击任意截图可放大查看。</p>
+      </div>
+
+      <div class="shots shots-3 reveal">
+        <figure class="shot" data-full="images/main-dark.png">
+          <img src="images/main-dark.png" alt="主界面 · 深色主题" loading="lazy">
+          <figcaption data-i18n="shot.1">主界面 · 深色（森林主题）</figcaption>
+        </figure>
+        <figure class="shot" data-full="images/main-light.png">
+          <img src="images/main-light.png" alt="主界面 · 浅色主题" loading="lazy">
+          <figcaption data-i18n="shot.2">主界面 · 浅色（素白预设）</figcaption>
+        </figure>
+        <figure class="shot" data-full="images/privacy-mode.png">
+          <img src="images/privacy-mode.png" alt="隐私模式" loading="lazy">
+          <figcaption data-i18n="shot.3">隐私模式 · 隐藏任务文本</figcaption>
+        </figure>
+      </div>
+
+      <div class="shots shots-2 reveal">
+        <figure class="shot" data-full="images/settings-appearance.png">
+          <img src="images/settings-appearance.png" alt="设置 · 外观" loading="lazy">
+          <figcaption data-i18n="shot.4">设置 · 外观（主题 · 颜色 · 字体 · 透明度）</figcaption>
+        </figure>
+        <figure class="shot" data-full="images/settings-archive.png">
+          <img src="images/settings-archive.png" alt="设置 · 归档数据" loading="lazy">
+          <figcaption data-i18n="shot.5">设置 · 归档数据（按分组恢复 / 永久删除）</figcaption>
+        </figure>
+      </div>
+
+      <div class="shots shots-1 reveal">
+        <figure class="shot" data-full="images/edge-dock.png">
+          <img src="images/edge-dock.png" alt="贴边条与悬停胶囊" loading="lazy">
+          <figcaption data-i18n="shot.6">贴边条 / 悬停胶囊（空闲自动收起）</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 下载 -->
+  <section id="download">
+    <div class="wrap">
+      <div class="dl-card reveal">
+        <img class="dl-icon" src="favicon.ico" alt="" aria-hidden="true">
+        <h2 data-i18n="dl.title">立即下载</h2>
+        <p data-i18n="dl.subtitle">下载 Windows 安装包，双击即装即用，无需配置任何环境。</p>
+        <div class="dl-actions">
+          <a class="btn btn-primary" href="https://github.com/ZhouYu-ZY1/Micro-Todo/releases/download/v1.2.1/Micro.Todo-Setup-v1.2.1.exe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span data-i18n="dl.button">下载 Windows 版 v1.2.1</span>
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/ZhouYu-ZY1/Micro-Todo/releases" target="_blank" rel="noopener">
+            <span data-i18n="dl.all">查看所有版本</span>
+          </a>
+        </div>
+        <div class="dl-facts">
+          <div><span data-i18n="dl.f1">当前版本</span><b>v1.2.1</b></div>
+          <div><span data-i18n="dl.f2">系统要求</span><b>Windows 10 / 11</b></div>
+          <div><span data-i18n="dl.f3">开源协议</span><b>MIT License</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <span data-i18n="foot.left">微清单 Micro Todo · 本地运行，数据不上传</span>
+    <span>
+      <a href="https://github.com/ZhouYu-ZY1/Micro-Todo" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/ZhouYu-ZY1/Micro-Todo/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </span>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox">
+  <button type="button" id="lightboxClose" aria-label="Close">×</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var I18N = {
+    zh: {
+      "meta.title": "微清单 Micro Todo — 简洁的 Windows 桌面待办便签",
+      "meta.desc": "微清单 Micro Todo：一个简洁的 Windows 桌面 TODO 便签软件。半透明无边框、分组管理、点圆点即完成、数据本地保存。",
+      "brand": "微清单",
+      "nav.features": "功能特性",
+      "nav.preview": "界面预览",
+      "nav.download": "下载",
+      "hero.badge": "Windows 桌面便签 · 免费开源",
+      "hero.title": "微清单",
+      "hero.slogan": "简洁的 <em>Windows 桌面待办</em>便签",
+      "hero.desc": "半透明、无边框、普通窗口层级，能看见你的桌面壁纸。点圆点即完成，双击文字直接编辑，数据全部存在本地。",
+      "cta.download": "下载 v1.2.1",
+      "cta.source": "查看源码",
+      "hero.meta": "支持 Windows 10 / 11 · 免费开源 · MIT License",
+      "feat.title": "功能特性",
+      "feat.subtitle": "一个够用就好的桌面便签，不多一分复杂。",
+      "feat.1.t": "半透明便签",
+      "feat.1.d": "无边框、普通窗口层级，背景透明，可以看见桌面壁纸。",
+      "feat.2.t": "分组与拖动排序",
+      "feat.2.d": "按分组整理任务，长按分组标题或任务即可拖动排序。",
+      "feat.3.t": "点圆点即完成",
+      "feat.3.d": "点任务左侧圆点标记完成，双击文字直接编辑，回车保存。",
+      "feat.4.t": "已完成 / 已搁置",
+      "feat.4.d": "二级列表折叠收纳，一键把事项恢复回主列表。",
+      "feat.5.t": "归档而非删除",
+      "feat.5.d": "移除先进入归档，可按原分组查看，批量恢复或永久删除。",
+      "feat.6.t": "外观随心调",
+      "feat.6.d": "7 套主题预设，颜色、字体、字号、背景透明度都能改，还能存为自定义预设。",
+      "feat.7.t": "中英双语界面",
+      "feat.7.d": "界面语言可在简体中文与 English 之间切换。",
+      "feat.8.t": "锁定与隐私模式",
+      "feat.8.d": "锁定后隐藏编辑控件避免误改；隐私模式一键隐藏全部任务文本。",
+      "feat.9.t": "闲置自动贴边",
+      "feat.9.d": "空闲几秒自动收成屏幕边缘的细条，鼠标移入展开「待办 N 项」胶囊，托盘常驻。",
+      "feat.10.t": "数据本地保存",
+      "feat.10.d": "任务存在本机 SQLite 数据库，关掉重开还在，还可设置开机自启。",
+      "preview.title": "界面预览",
+      "preview.subtitle": "点击任意截图可放大查看。",
+      "shot.1": "主界面 · 深色（森林主题）",
+      "shot.2": "主界面 · 浅色（素白预设）",
+      "shot.3": "隐私模式 · 隐藏任务文本",
+      "shot.4": "设置 · 外观（主题 · 颜色 · 字体 · 透明度）",
+      "shot.5": "设置 · 归档数据（按分组恢复 / 永久删除）",
+      "shot.6": "贴边条 / 悬停胶囊（空闲自动收起）",
+      "dl.title": "立即下载",
+      "dl.subtitle": "下载 Windows 安装包，双击即装即用，无需配置任何环境。",
+      "dl.button": "下载 Windows 版 v1.2.1",
+      "dl.all": "查看所有版本",
+      "dl.f1": "当前版本",
+      "dl.f2": "系统要求",
+      "dl.f3": "开源协议",
+      "foot.left": "微清单 Micro Todo · 本地运行，数据不上传"
+    },
+    en: {
+      "meta.title": "Micro Todo — A minimal desktop todo app for Windows",
+      "meta.desc": "Micro Todo is a minimal Windows desktop todo note app: translucent and borderless, grouped tasks, click to complete, all data stored locally.",
+      "brand": "Micro Todo",
+      "nav.features": "Features",
+      "nav.preview": "Preview",
+      "nav.download": "Download",
+      "hero.badge": "Windows desktop app · Free & open source",
+      "hero.title": "Micro Todo",
+      "hero.slogan": "A minimal <em>desktop todo</em> note for Windows",
+      "hero.desc": "Translucent, borderless and non-topmost, so you can still see your wallpaper. Click the dot to complete, double-click the text to edit — everything stays on your machine.",
+      "cta.download": "Download v1.2.1",
+      "cta.source": "View source",
+      "hero.meta": "Windows 10 / 11 · Free & open source · MIT License",
+      "feat.title": "Features",
+      "feat.subtitle": "A desktop note that does what it should — nothing more.",
+      "feat.1.t": "Translucent note",
+      "feat.1.d": "Borderless and non-topmost, with a transparent background that lets your wallpaper show through.",
+      "feat.2.t": "Groups & drag to reorder",
+      "feat.2.d": "Organize tasks into groups, then press and drag a group title or task to reorder.",
+      "feat.3.t": "Click the dot to finish",
+      "feat.3.d": "Click the dot on the left to complete a task, double-click the text to edit, Enter to save.",
+      "feat.4.t": "Completed / deferred",
+      "feat.4.d": "Collapsible second-level lists, with one click to restore an item back to the main list.",
+      "feat.5.t": "Archive, not delete",
+      "feat.5.d": "Removed items go to the archive first — review them by original group, restore in bulk or delete for good.",
+      "feat.6.t": "Make it yours",
+      "feat.6.d": "7 theme presets plus custom color, font, size and background opacity — save your own preset too.",
+      "feat.7.t": "Chinese & English UI",
+      "feat.7.d": "Switch the interface language between Simplified Chinese and English.",
+      "feat.8.t": "Lock & privacy mode",
+      "feat.8.d": "Lock the window to hide editing controls, or hide every task text with privacy mode.",
+      "feat.9.t": "Auto edge dock",
+      "feat.9.d": "After a few idle seconds it collapses into a thin edge bar; hover to expand the “N pending” capsule. Always in the tray.",
+      "feat.10.t": "Local data",
+      "feat.10.d": "Tasks live in a local SQLite database — still there after restart. Optional run at startup.",
+      "preview.title": "Interface preview",
+      "preview.subtitle": "Click any screenshot to enlarge it.",
+      "shot.1": "Main window · Dark (Forest theme)",
+      "shot.2": "Main window · Light (Plain preset)",
+      "shot.3": "Privacy mode · Task text hidden",
+      "shot.4": "Settings · Appearance (theme, color, font, opacity)",
+      "shot.5": "Settings · Archive (restore by group / delete permanently)",
+      "shot.6": "Edge dock / hover capsule (collapses when idle)",
+      "dl.title": "Download now",
+      "dl.subtitle": "Grab the Windows installer — double-click, done. No environment setup required.",
+      "dl.button": "Download for Windows v1.2.1",
+      "dl.all": "All releases",
+      "dl.f1": "Version",
+      "dl.f2": "Requirements",
+      "dl.f3": "License",
+      "foot.left": "Micro Todo · Runs locally, your data never leaves your PC"
+    }
+  };
+
+  var STORE_KEY = "micro-todo-lang";
+  var langBtn = document.getElementById("langBtn");
+  var descMeta = document.querySelector('meta[name="description"]');
+
+  function pickLang() {
+    try {
+      var saved = localStorage.getItem(STORE_KEY);
+      if (saved && I18N[saved]) return saved;
+    } catch (e) { /* 隐私模式下 localStorage 可能不可用 */ }
+    var nav = (navigator.language || "").toLowerCase();
+    return nav.indexOf("zh") === 0 ? "zh" : "en";
+  }
+
+  function apply(lang) {
+    if (!I18N[lang]) lang = "zh";
+    var dict = I18N[lang];
+
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    document.title = dict["meta.title"];
+    if (descMeta) descMeta.setAttribute("content", dict["meta.desc"]);
+    langBtn.textContent = lang === "zh" ? "EN" : "中";
+    langBtn.setAttribute("aria-label", lang === "zh" ? "Switch to English" : "切换到中文");
+
+    var nodes = document.querySelectorAll("[data-i18n],[data-i18n-html]");
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var htmlKey = el.getAttribute("data-i18n-html");
+      var textKey = el.getAttribute("data-i18n");
+      var value = dict[htmlKey || textKey];
+      if (value == null) continue;
+      if (htmlKey) el.innerHTML = value;
+      else el.textContent = value;
+    }
+
+    try { localStorage.setItem(STORE_KEY, lang); } catch (e) { /* 忽略 */ }
+  }
+
+  langBtn.addEventListener("click", function () {
+    apply(document.documentElement.lang === "en" ? "zh" : "en");
+  });
+
+  // 截图放大
+  var lightbox = document.getElementById("lightbox");
+  var lightboxImg = document.getElementById("lightboxImg");
+  var closeBtn = document.getElementById("lightboxClose");
+
+  function closeLightbox() {
+    lightbox.classList.remove("open");
+    lightboxImg.removeAttribute("src");
+    document.body.style.overflow = "";
+  }
+
+  var shots = document.querySelectorAll(".shot");
+  for (var j = 0; j < shots.length; j++) {
+    shots[j].addEventListener("click", function () {
+      var src = this.getAttribute("data-full");
+      if (!src) return;
+      lightboxImg.src = src;
+      lightbox.classList.add("open");
+      document.body.style.overflow = "hidden";
+    });
+  }
+  closeBtn.addEventListener("click", closeLightbox);
+  lightbox.addEventListener("click", function (e) {
+    if (e.target === lightbox) closeLightbox();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && lightbox.classList.contains("open")) closeLightbox();
+  });
+
+  // 滚动入场
+  var revealNodes = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in");
+          io.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    for (var k = 0; k < revealNodes.length; k++) io.observe(revealNodes[k]);
+  } else {
+    for (var m = 0; m < revealNodes.length; m++) revealNodes[m].classList.add("in");
+  }
+
+  apply(pickLang());
+})();
+</script>
+</body>
+</html>
